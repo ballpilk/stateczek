@@ -1,5 +1,8 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <Maszyna.hpp>
+#include <Rudder.hpp>
+
 ADC_MODE(ADC_VCC);
 WiFiServer server(80);
 
@@ -8,76 +11,14 @@ int pinMaszynyP(5);//maszyna+
 int pinMaszynyT(16);
 int pinSteru(4);//ster
 int connectionLedPin(14);//D5
-int maszyna(0), ster(0);
 IPAddress local_IP(192,168,1,1);
 IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
 int vcc(0);
 
-class Maszyna{
-public:
-  Maszyna(int pinP, int pinT)
-  :pinP_(pinP), pinT_(pinT)
-  {
-    pinMode(pinP_, OUTPUT);
-    pinMode(pinT_, OUTPUT);
-    stop();
-  }
-  void stop()
-  {
-    currSpeed_=0;
-    setSpeed();
-  }
-  void faster(){
-    currSpeed_ = min(currSpeed_ + 128, 1024);
-    setSpeed();
-  }
-  void maxForward()
-  {
-    currSpeed_ = 1024;
-    setSpeed();
-  }
-  void maxBackward()
-  {
-    currSpeed_ = -1024;
-    setSpeed();
-  }
-  void slower(){
-    currSpeed_ = max(currSpeed_ - 128, -1024);
-    setSpeed();
-  }
-  int getSpeed(){return currSpeed_;}
-private:
-  void setSpeed()
-  {
-    if (currSpeed_ > 0)
-    {
-      analogWrite(pinP_, currSpeed_);
-      digitalWrite(pinT_, 0);
-    }
-    else if (currSpeed_ < 0)
-    {
-      analogWrite(pinT_, -currSpeed_);
-      digitalWrite(pinP_, 0);
-    }
-    else
-    {
-      digitalWrite(pinP_, 0);
-      digitalWrite(pinT_, 0);
-    }
-  }
-  int currSpeed_;
-  int pinP_;
-  int pinT_;
-};
-class Ster
-{
-public:
-  Ster(int pin):pin_(pin){}
-private:
-  int pin_;
-};
+
 Maszyna silnik(pinMaszynyP, pinMaszynyT);
+Rudder ster(pinSteru);
 void setup()
 {
   Serial.begin(115200);
@@ -86,8 +27,6 @@ void setup()
   Serial.print("Setting soft-AP ... ");
   WiFi.softAPConfig(local_IP, gateway, subnet);
   bool result = WiFi.softAP("stateczek", "haseleczko");
-  pinMode(pinSteru, OUTPUT);
-  analogWriteFreq(300);
   pinMode(connectionLedPin, OUTPUT);
   if(result == true)
   {
@@ -118,7 +57,7 @@ void sendStatus(WiFiClient& client)
   client.println("klientow # silnik: ");
   client.println(silnik.getSpeed());
   client.println(" # ster: ");
-  client.println(ster);
+  client.println(ster.getRudder());
   client.println(" </p></body></html> ");
 }
 void sendMainPage(WiFiClient& client)
@@ -165,32 +104,27 @@ bool checkControlFunstions(const String& header)
   else if (header.indexOf("GET /4/plus") >= 0)
   {
     found = true;
-    ster = min(ster+32, 702);//990
-    analogWrite(pinSteru, ster);
+    ster.left();
   }
   else if (header.indexOf("GET /4/max") >= 0)
   {
     found = true;
-    ster = 702;
-    analogWrite(pinSteru, ster);
+    ster.maxLeft();
   }
   else if (header.indexOf("GET /4/minus") >= 0)
   {
     found = true;
-    ster = max(ster-32,216);//350
-    analogWrite(pinSteru, ster);
+    ster.right()
   }
   else if (header.indexOf("GET /4/minm") >= 0)
   {
     found = true;
-    ster = 216;
-    analogWrite(pinSteru, ster);
+    ster.maxRight();
   }
   else if (header.indexOf("GET /4/reset") >= 0)
   {
     found = true;
-    ster = 440;
-    analogWrite(pinSteru, ster);
+    ster.straight();
   }
   else if (header.indexOf("GET /status") >= 0)
   {
