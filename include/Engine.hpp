@@ -2,10 +2,10 @@
 #include <ESP8266WiFi.h>
 #include "SoftPwm.hpp"
 
-class Maszyna{
+class Engine{
 public:
-  Maszyna(int pinP, int pinT, Pwm& pwm)
-  :pinP_(pinP), pinT_(pinT), pwm_(pwm)
+  Engine(int pinP, int pinT, Pwm& pwm)
+  : pwm_(pwm), pinP_(pinP), pinT_(pinT)
   {
     pinMode(pinP_, OUTPUT);
     pinMode(pinT_, OUTPUT);

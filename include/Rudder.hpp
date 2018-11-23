@@ -4,7 +4,7 @@
 class Rudder
 {
 public:
-  Rudder(int pin, Pwm& pwm):pin_(pin), pwm_(pwm)
+  Rudder(int pin, Pwm& pwm): pwm_(pwm), pin_(pin)
   {
     pinMode(pin_, OUTPUT);
     pwm_.setFreq(300);

@@ -1,5 +1,5 @@
 
-#include <Maszyna.hpp>
+#include <Engine.hpp>
 #include <Rudder.hpp>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
@@ -13,7 +13,7 @@ ESP8266WebServer server(80);
 IPAddress myIP;
 int pinMaszynyP(5);//maszyna+
 int pinMaszynyT(16);
-int pinSteru(4);//ster
+int pinSteru(10);//ster
 int connectionLedPin(14);//D5
 IPAddress local_IP(192,168,1,1);
 IPAddress gateway(192,168,1,1);
@@ -21,8 +21,8 @@ IPAddress subnet(255,255,255,0);
 int vcc(0);
 unsigned long int lastStat = 0;
 Pwm pwm;
-Maszyna silnik(pinMaszynyP, pinMaszynyT, pwm);
-Rudder ster(pinSteru, pwm);
+Engine engine(pinMaszynyP, pinMaszynyT, pwm);
+Rudder rudder(pinSteru, pwm);
 
 
 ESP8266WiFiMulti WiFiMulti;
@@ -44,9 +44,9 @@ String sendStatus()
   oss += "mV # ";
   oss += WiFi.softAPgetStationNum();
   oss += "klientow # silnik: ";
-  oss += silnik.getSpeed();
+  oss += engine.getSpeed();
   oss += " # ster: ";
-  oss += ster.getRudder();
+  oss += rudder.getRudder();
   oss += " </p></body></html> ";
   Serial.print("s");
   return oss;
@@ -78,14 +78,14 @@ String sendMain()
 }
 void checkControlFunstions(ESP8266WebServer& ser)
 {
-  ser.on("/5/plus", [&](){   ser.send(200, "text/html", sendStatus());   silnik.faster(); });
-  ser.on("/5/minus", [&](){  ser.send(200, "text/html", sendStatus());    silnik.slower();});
-  ser.on("/5/reset", [&](){  ser.send(200, "text/html", sendStatus());    silnik.stop();});
-  ser.on("/4/plus", [&](){  ser.send(200, "text/html", sendStatus());    ster.left();});
-  ser.on("/4/minus", [&](){  ser.send(200, "text/html", sendStatus());    ster.right();});
-  ser.on("/4/max", [&](){  ser.send(200, "text/html", sendStatus());    ster.maxRight();});
-  ser.on("/4/minm", [&](){  ser.send(200, "text/html", sendStatus());    ster.maxLeft();});
-  ser.on("/4/reset", [&](){  ser.send(200, "text/html", sendStatus());    ster.straight();});
+  ser.on("/5/plus", [&](){   ser.send(200, "text/html", sendStatus());   engine.faster(); });
+  ser.on("/5/minus", [&](){  ser.send(200, "text/html", sendStatus());    engine.slower();});
+  ser.on("/5/reset", [&](){  ser.send(200, "text/html", sendStatus());    engine.stop();});
+  ser.on("/4/plus", [&](){  ser.send(200, "text/html", sendStatus());    rudder.left();});
+  ser.on("/4/minus", [&](){  ser.send(200, "text/html", sendStatus());    rudder.right();});
+  ser.on("/4/max", [&](){  ser.send(200, "text/html", sendStatus());    rudder.maxRight();});
+  ser.on("/4/minm", [&](){  ser.send(200, "text/html", sendStatus());    rudder.maxLeft();});
+  ser.on("/4/reset", [&](){  ser.send(200, "text/html", sendStatus());    rudder.straight();});
   ser.on("/status", [&](){  ser.send(200, "text/html", sendStatus());});
   ser.on("/", [&](){  ser.send(200, "text/html", sendMain());});
   ser.on("", [&](){  ser.send(200, "text/html", sendMain());});
