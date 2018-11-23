@@ -1,10 +1,14 @@
-#include <Arduino.h>
-#include <ESP8266WiFi.h>
+
 #include <Maszyna.hpp>
 #include <Rudder.hpp>
+#include <ESP8266WebServer.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
+
 
 ADC_MODE(ADC_VCC);
-WiFiServer server(80);
+//WiFiServer server(80);
+ESP8266WebServer server(80);
 
 IPAddress myIP;
 int pinMaszynyP(5);//maszyna+
@@ -15,30 +19,14 @@ IPAddress local_IP(192,168,1,1);
 IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
 int vcc(0);
+unsigned long int lastStat = 0;
+Pwm pwm;
+Maszyna silnik(pinMaszynyP, pinMaszynyT, pwm);
+Rudder ster(pinSteru, pwm);
 
 
-Maszyna silnik(pinMaszynyP, pinMaszynyT);
-Rudder ster(pinSteru);
-void setup()
-{
-  Serial.begin(115200);
-  Serial.println();
+ESP8266WiFiMulti WiFiMulti;
 
-  Serial.print("Setting soft-AP ... ");
-  WiFi.softAPConfig(local_IP, gateway, subnet);
-  bool result = WiFi.softAP("stateczek", "haseleczko");
-  pinMode(connectionLedPin, OUTPUT);
-  if(result == true)
-  {
-    Serial.println("Ready");
-  }
-  else
-  {
-    Serial.println("Failed!");
-  }
-  myIP = WiFi.softAPIP();
-  server.begin();
-}
 void sendResponseHeader(WiFiClient& client )
 {
   client.println("HTTP/1.1 200 OK");
@@ -46,139 +34,88 @@ void sendResponseHeader(WiFiClient& client )
   client.println("Connection: close");
   client.println();
 }
-void sendStatus(WiFiClient& client)
+String sendStatus()
 {
-  client.println("<!DOCTYPE html><html>");
-  client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>");
-  client.println("<body onLoad=\"setTimeout(function(){ window.location.replace('http://192.168.1.1/status'); }, 2000);\"><p>Vcc: ");
-  client.println(vcc);
-  client.println("mV # ");
-  client.println(WiFi.softAPgetStationNum());
-  client.println("klientow # silnik: ");
-  client.println(silnik.getSpeed());
-  client.println(" # ster: ");
-  client.println(ster.getRudder());
-  client.println(" </p></body></html> ");
+  String oss;
+  oss += "<!DOCTYPE html><html>\
+  <head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>\
+  <body onLoad=\"setTimeout(function(){ window.location.replace('/status'); }, 2000);\" style=\"margin:2px auto; font-size:12px; padding:2px\"><p align=center>Vcc: ";
+  oss += vcc;
+  oss += "mV # ";
+  oss += WiFi.softAPgetStationNum();
+  oss += "klientow # silnik: ";
+  oss += silnik.getSpeed();
+  oss += " # ster: ";
+  oss += ster.getRudder();
+  oss += " </p></body></html> ";
+  Serial.print("s");
+  return oss;
 }
-void sendMainPage(WiFiClient& client)
+String sendMain()
 {
-  client.println("    <!DOCTYPE html><html>");
-  client.println("  <head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-  client.println("  <link rel=\"icon\" href=\"data:,\">");
-  client.println("  <style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
-  client.println("  .button { background-color: #195B6A; border: none; color: white; padding: 10px 20px;");
-  client.println("  text-decoration: none; font-size: 15px; margin: 2px; cursor: pointer;}");
-  client.println("  .button2 {background-color: #77878A;}</style></head>");
-  client.println("  <body>");
-  client.println("  <iframe src=/status  name=status height=30  width=100% ></iframe>");
-  client.println("  <h1>Okrecik</h1>");
-  client.println("  <p>Silnik");
-  client.println("  </p>");
-  client.println("  <p><a href=\"/5/plus\" target=status><button class=\"button\" formtarget=status>+</button></a></p>");
-  client.println("  <p><a href=\"/5/reset\" target=status><button class=\"button button2\"  formtarget=status>Maszyna stop</button></a></p>");
-  client.println("  <p><a href=\"/5/minus\" target=status><button class=\"button\" formtarget=status>-</button></a></p>");
-  client.println("  <p>Ster  client.println(ster);</p>");
-  client.println("  <p><a href=\"/4/max\" target=status><button class=\"button\" formtarget=status>--</button></a><a href=\"/4/plus\" target=status><button class=\"button\" formtarget=status>-</button></a>");
-  client.println("  <a href=\"/4/reset\" target=status><button class=\"button button2\" formtarget=status>0</button></a>");
-  client.println("  <a href=\"/4/minus\" target=status><button class=\"button\" formtarget=status>+</button></a><a href=\"/4/minm\" target=status><button class=\"button\" formtarget=status>++</button></a></p>");
-  client.println("  </body></html>");
+  vcc = ESP.getVcc();
+    String oss;
+    oss += "    <!DOCTYPE html><html>\
+      <head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\
+      <link rel=\"icon\" href=\"data:,\">\
+      <style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\
+      .button { background-color: #195B6A; border: none; color: white; padding: 10px 20px;\
+      text-decoration: none; font-size: 15px; margin: 2px; cursor: pointer;}\
+      .button2 {background-color: #77878A;}</style></head><body>\
+      <iframe src=/status  name=status height=60  width=100% ></iframe>\
+      <h1>Okrecik</h1>\
+      <p>Silnik </p>\
+      <p><a href=\"/5/plus\" target=status><button class=\"button\" formtarget=status>+</button></a></p>\
+      <p><a href=\"/5/reset\" target=status><button class=\"button button2\"  formtarget=status>Maszyna stop</button></a></p>\
+      <p><a href=\"/5/minus\" target=status><button class=\"button\" formtarget=status>-</button></a></p>\
+      <p>Ster</p>\
+      <p><a href=\"/4/max\" target=status><button class=\"button\" formtarget=status>--</button></a><a href=\"/4/plus\" target=status><button class=\"button\" formtarget=status>-</button></a>\
+      <a href=\"/4/reset\" target=status><button class=\"button button2\" formtarget=status>0</button></a>\
+      <a href=\"/4/minus\" target=status><button class=\"button\" formtarget=status>+</button></a><a href=\"/4/minm\" target=status><button class=\"button\" formtarget=status>++</button></a></p>\
+      </body></html>";
+      Serial.print("m");
+    return oss;
 }
-bool checkControlFunstions(const String& header)
+void checkControlFunstions(ESP8266WebServer& ser)
 {
-  bool found = false;
-  if (header.indexOf("GET /5/plus") >= 0)
-  {
-    found = true;
-    silnik.faster();
-  }
-  else if (header.indexOf("GET /5/minus") >= 0)
-  {
-    found = true;
-    silnik.slower();
-  }
-  else if (header.indexOf("GET /5/reset") >= 0)
-  {
-   found = true;
-   silnik.stop();
-  }
-  else if (header.indexOf("GET /4/plus") >= 0)
-  {
-    found = true;
-    ster.left();
-  }
-  else if (header.indexOf("GET /4/max") >= 0)
-  {
-    found = true;
-    ster.maxLeft();
-  }
-  else if (header.indexOf("GET /4/minus") >= 0)
-  {
-    found = true;
-    ster.right()
-  }
-  else if (header.indexOf("GET /4/minm") >= 0)
-  {
-    found = true;
-    ster.maxRight();
-  }
-  else if (header.indexOf("GET /4/reset") >= 0)
-  {
-    found = true;
-    ster.straight();
-  }
-  else if (header.indexOf("GET /status") >= 0)
-  {
-    found = true;
-  }
-  return found;
+  ser.on("/5/plus", [&](){   ser.send(200, "text/html", sendStatus());   silnik.faster(); });
+  ser.on("/5/minus", [&](){  ser.send(200, "text/html", sendStatus());    silnik.slower();});
+  ser.on("/5/reset", [&](){  ser.send(200, "text/html", sendStatus());    silnik.stop();});
+  ser.on("/4/plus", [&](){  ser.send(200, "text/html", sendStatus());    ster.left();});
+  ser.on("/4/minus", [&](){  ser.send(200, "text/html", sendStatus());    ster.right();});
+  ser.on("/4/max", [&](){  ser.send(200, "text/html", sendStatus());    ster.maxRight();});
+  ser.on("/4/minm", [&](){  ser.send(200, "text/html", sendStatus());    ster.maxLeft();});
+  ser.on("/4/reset", [&](){  ser.send(200, "text/html", sendStatus());    ster.straight();});
+  ser.on("/status", [&](){  ser.send(200, "text/html", sendStatus());});
+  ser.on("/", [&](){  ser.send(200, "text/html", sendMain());});
+  ser.on("", [&](){  ser.send(200, "text/html", sendMain());});
+  ser.onNotFound([&](){  ser.send(200, "text/html", sendMain());});
 }
+void setup()
+{
+  Serial.begin(115200);
+  Serial.println();
+  WiFi.mode(WIFI_STA);
+
+
+Serial.print("Configuring access point...");
+/* You can remove the password parameter if you want the AP to be open. */
+WiFi.config(local_IP, IPAddress(1,1,1,1), gateway, subnet);
+WiFi.softAP("stateczek", "haseleczko");
+
+IPAddress myIP = WiFi.softAPIP();
+Serial.print("AP IP address: ");
+Serial.println(myIP);
+  delay(500);
+
+  checkControlFunstions(server);
+  server.begin();
+
+}
+
 
 void loop()
 {
-  if(WiFi.softAPgetStationNum() > 0)
-  {
-     digitalWrite(connectionLedPin,1);
-
-  }
-  else
-  {
-      digitalWrite(connectionLedPin, 0);
-  }
-  WiFiClient client = server.available();   // Listen for incoming clients
-
-   if (client) {                             // If a new client connects,
-     String header;
-     Serial.println("New Client.");          // print a message out in the serial port
-     String currentLine = "";                // make a String to hold incoming data from the client
-     while (client.connected()) {            // loop while the client's connected
-       if (client.available()) {             // if there's bytes to read from the client,
-         char c = client.read();             // read a byte, then
-         Serial.write(c);                    // print it out the serial monitor
-         header += c;
-         if (c == '\n') {                    // if the byte is a newline character
-           if (currentLine.length() == 0) {
-             vcc = ESP.getVcc();
-             sendResponseHeader(client);
-             if( checkControlFunstions(header))
-                sendStatus(client);
-            else
-                sendMainPage(client);
-             break;
-           }
-           else { // if you got a newline, then clear currentLine
-             currentLine = "";
-           }
-         }
-         else if (c != '\r') {  // if you got anything else but a carriage return character,
-           currentLine += c;      // add it to the end of the currentLine
-         }
-       }
-     }
-     header = "";
-     client.stop();
-     Serial.println("Client disconnected.");
-     Serial.println("");
-   }
-
-
+  server.handleClient();
+  pwm.ping();
  }

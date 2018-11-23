@@ -1,41 +1,42 @@
 #pragma once
-#include <Arduino.h>
-
+#include <ESP8266WiFi.h>
+#include "SoftPwm.hpp"
 class Rudder
 {
 public:
-  Rudder(int pin):pin_(pin)
+  Rudder(int pin, Pwm& pwm):pin_(pin), pwm_(pwm)
   {
     pinMode(pin_, OUTPUT);
-    analogWriteFreq(300);
+    pwm_.setFreq(300);
     straight();
   }
   void left()
   {
     ster = min(ster+32, 702);//990
-    analogWrite(pin_, ster);
+    pwm_.setLevel(pin_, ster);
   }
   void right(){
     ster = max(ster-32, 216);//990
-    analogWrite(pin_, ster);
+    pwm_.setLevel(pin_, ster);
   }
   void straight()
   {
     ster = 440;
-    analogWrite(pin_, ster);
+    pwm_.setLevel(pin_, ster);
   }
   void maxLeft()
   {
     ster = 702;
-    analogWrite(pin_, ster);
+    pwm_.setLevel(pin_, ster);
   }
   void maxRight()
   {
     ster = 216;
-    analogWrite(pin_, ster);
+    pwm_.setLevel(pin_, ster);
   }
   int getRudder(){return ster;}
 private:
+  Pwm& pwm_;
   int ster;
   int pin_;
 };

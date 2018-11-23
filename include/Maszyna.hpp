@@ -1,11 +1,11 @@
 #pragma once
-#include <Arduino.h>
-
+#include <ESP8266WiFi.h>
+#include "SoftPwm.hpp"
 
 class Maszyna{
 public:
-  Maszyna(int pinP, int pinT)
-  :pinP_(pinP), pinT_(pinT)
+  Maszyna(int pinP, int pinT, Pwm& pwm)
+  :pinP_(pinP), pinT_(pinT), pwm_(pwm)
   {
     pinMode(pinP_, OUTPUT);
     pinMode(pinT_, OUTPUT);
@@ -40,20 +40,21 @@ private:
   {
     if (currSpeed_ > 0)
     {
-      analogWrite(pinP_, currSpeed_);
-      digitalWrite(pinT_, 0);
+      pwm_.setLevel(pinP_, currSpeed_);
+      pwm_.setLevel(pinT_, 0);
     }
     else if (currSpeed_ < 0)
     {
-      analogWrite(pinT_, -currSpeed_);
-      digitalWrite(pinP_, 0);
+      pwm_.setLevel(pinT_, -currSpeed_);
+      pwm_.setLevel(pinP_, 0);
     }
     else
     {
-      digitalWrite(pinP_, 0);
-      digitalWrite(pinT_, 0);
+      pwm_.setLevel(pinP_, 0);
+      pwm_.setLevel(pinT_, 0);
     }
   }
+  Pwm& pwm_;
   int currSpeed_;
   int pinP_;
   int pinT_;
