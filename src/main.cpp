@@ -12,7 +12,7 @@ IPAddress myIP;
 int pinMaszynyP(5);//maszyna+
 int pinMaszynyT(16);
 int pinSteru(10);//ster
-int connectionLedPin(12);//D5
+int connectionLedPin(12);//D6
 int engineOnPin(4);
 IPAddress local_IP(192,168,1,1);
 IPAddress gateway(192,168,1,1);
