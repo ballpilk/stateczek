@@ -4,7 +4,7 @@
 class Rudder
 {
 public:
-  Rudder(int pin, Pwm& pwm): pwm_(pwm), pin_(pin)
+  Rudder(int pin, Pwm& pwm): pwm_(pwm),pin_(pin)
   {
     pinMode(pin_, OUTPUT);
     pwm_.setFreq(300);
@@ -21,17 +21,17 @@ public:
   }
   void straight()
   {
-    ster = 440;
+    ster = 512;
     pwm_.setLevel(pin_, ster);
   }
   void maxLeft()
   {
-    ster = 702;
+    ster = 802;
     pwm_.setLevel(pin_, ster);
   }
   void maxRight()
   {
-    ster = 216;
+    ster = 240;
     pwm_.setLevel(pin_, ster);
   }
   int getRudder(){return ster;}
