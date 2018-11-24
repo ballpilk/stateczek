@@ -4,11 +4,12 @@
 
 class Engine{
 public:
-  Engine(int pinP, int pinT, Pwm& pwm)
-  : pwm_(pwm), pinP_(pinP), pinT_(pinT)
+  Engine(int pinP, int pinT, Pwm& pwm, int ledpin)
+  : pwm_(pwm), pinP_(pinP), pinT_(pinT), ledpin_(ledpin)
   {
     pinMode(pinP_, OUTPUT);
     pinMode(pinT_, OUTPUT);
+    pinMode(ledpin_, OUTPUT);
     stop();
   }
   void stop()
@@ -42,20 +43,24 @@ private:
     {
       pwm_.setLevel(pinP_, currSpeed_);
       pwm_.setLevel(pinT_, 0);
+      digitalWrite(ledpin_, HIGH);
     }
     else if (currSpeed_ < 0)
     {
       pwm_.setLevel(pinT_, -currSpeed_);
       pwm_.setLevel(pinP_, 0);
+      digitalWrite(ledpin_, HIGH);
     }
     else
     {
       pwm_.setLevel(pinP_, 0);
       pwm_.setLevel(pinT_, 0);
+      digitalWrite(ledpin_, LOW);
     }
   }
   Pwm& pwm_;
   int currSpeed_;
   int pinP_;
   int pinT_;
+  int ledpin_;
 };

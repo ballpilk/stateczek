@@ -12,7 +12,8 @@ IPAddress myIP;
 int pinMaszynyP(5);//maszyna+
 int pinMaszynyT(16);
 int pinSteru(10);//ster
-int connectionLedPin(14);//D5
+int connectionLedPin(12);//D5
+int engineOnPin(4);
 IPAddress local_IP(192,168,1,1);
 IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
@@ -20,7 +21,7 @@ int vcc(0);
 unsigned long int lastStat = 0;
 Ticker pwmTicker;
 Pwm pwm;
-Engine engine(pinMaszynyP, pinMaszynyT, pwm);
+Engine engine(pinMaszynyP, pinMaszynyT, pwm, engineOnPin);
 Rudder rudder(pinSteru, pwm);
 
 void ping()
@@ -95,7 +96,7 @@ void checkControlFunstions(ESP8266WebServer& ser)
 }
 void ICACHE_RAM_ATTR onTimerISR(){
     pwm.ping();  //Toggle LED Pin
-    timer1_write(600);//12us
+    timer1_write(500);
 }
 
 void setup()
@@ -112,13 +113,17 @@ void setup()
   delay(500);
   checkControlFunstions(server);
   server.begin();
+  pinMode(connectionLedPin, OUTPUT);
 //  pwmTicker.attach_ms(1, &ping);
   timer1_attachInterrupt(onTimerISR);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-  timer1_write(600); //120000 us
+  timer1_write(500);
 }
 void loop()
 {
   server.handleClient();
-  
+  if(WiFi.softAPgetStationNum() >0)
+    digitalWrite(connectionLedPin, LOW);
+  else
+    digitalWrite(connectionLedPin, HIGH);
 }
