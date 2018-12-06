@@ -5,19 +5,19 @@
 #include <ESP8266WiFiMulti.h>
 #include <Ticker.h>
 
-ADC_MODE(ADC_VCC);
+//ADC_MODE(ADC_VCC);
 ESP8266WebServer server(80);
 
 IPAddress myIP;
-int pinMaszynyP(5);//maszyna+
-int pinMaszynyT(16);
-int pinSteru(10);//ster
+int pinMaszynyP(5);//D1 maszyna+
+int pinMaszynyT(16);//D0
+int pinSteru(10);//SD3
 int connectionLedPin(12);//D6
-int engineOnPin(4);
+int engineOnPin(4);//D2
 IPAddress local_IP(192,168,1,1);
 IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
-int vcc(0);
+unsigned int vcc(0);
 unsigned long int lastStat = 0;
 Ticker pwmTicker;
 Pwm pwm;
@@ -39,10 +39,16 @@ void sendResponseHeader(WiFiClient& client )
 }
 String sendStatus()
 {
+  vcc = 3*analogRead(A0);//ESP.getVcc();
   String oss;
   oss += "<!DOCTYPE html><html>\
     <head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>\
-    <body onLoad=\"setTimeout(function(){ window.location.replace('/status'); }, 2000);\" style=\"margin:2px auto; font-size:12px; padding:2px\"><p align=center>Vcc: ";
+    <body onLoad=\"setTimeout(function(){ window.location.replace('/status'); }, 2000);\" style=\"margin:2px auto; font-size:12px; padding:2px";
+    if(vcc<5000)
+    {
+      oss+= "; background-color: #DD0000
+    }
+    oss+= "\"><p align=center>Vcc: ";
     oss += vcc;
     oss += "mV # ";
     oss += WiFi.softAPgetStationNum();
@@ -56,7 +62,7 @@ String sendStatus()
 }
 String sendMain()
 {
-  vcc = ESP.getVcc();
+
   String oss;
   oss += "    <!DOCTYPE html><html>\
     <head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\
@@ -106,11 +112,12 @@ void setup()
   WiFi.mode(WIFI_STA);
   Serial.print("Configuring access point...");
   WiFi.config(local_IP, IPAddress(1,1,1,1), gateway, subnet);
-  WiFi.softAP("stateczek", "haseleczko");
+  WiFi.softAP("statek", "haseleczko");
   IPAddress myIP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
   Serial.println(myIP);
   delay(500);
+  pinMode(A0, INPUT);
   checkControlFunstions(server);
   server.begin();
   pinMode(connectionLedPin, OUTPUT);
