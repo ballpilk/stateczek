@@ -36,6 +36,11 @@ public:
     setSpeed();
   }
   int getSpeed(){return currSpeed_;}
+  void set(int speed)
+  {
+    currSpeed_=speed;
+    setSpeed();
+  }
 private:
   void setSpeed()
   {
